@@ -65,7 +65,7 @@ const nextConfig = {
           // Create separate chunk for styled-components
           styledComponents: {
             name: 'styled-components',
-            test: /[\\/]node_modules[\\/](styled-components)[\\/]/,
+            test: /[\/]node_modules[\/](styled-components)[\/]/,
             chunks: 'all',
             priority: 10,
             enforce: true,
@@ -73,7 +73,7 @@ const nextConfig = {
           // Create separate chunk for React
           react: {
             name: 'react',
-            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            test: /[\/]node_modules[\/](react|react-dom)[\/]/,
             chunks: 'all',
             priority: 10,
             enforce: true,
@@ -84,16 +84,22 @@ const nextConfig = {
 
     // Add bundle analyzer in analyze mode
     if (process.env.ANALYZE === 'true') {
-      const { BundleAnalyzerPlugin } = require('@next/bundle-analyzer')();
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: false,
-          reportFilename: isServer
-            ? '../analyze/server.html'
-            : './analyze/client.html',
-        })
-      );
+      // Dynamic import for bundle analyzer to avoid ES module issues
+      import('@next/bundle-analyzer').then(({ default: bundleAnalyzer }) => {
+        const { BundleAnalyzerPlugin } = bundleAnalyzer();
+        config.plugins.push(
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            openAnalyzer: false,
+            reportFilename: isServer
+              ? '../analyze/server.html'
+              : './analyze/client.html',
+          })
+        );
+      }).catch(() => {
+        // Fallback if bundle analyzer is not available
+        console.warn('Bundle analyzer not available');
+      });
     }
 
     // Optimize for production builds
@@ -218,11 +224,15 @@ const nextConfig = {
 let config = nextConfig;
 
 if (process.env.ANALYZE === 'true') {
-  const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  // Use dynamic import for ES module compatibility
+  const { default: withBundleAnalyzer } = await import('@next/bundle-analyzer').then(mod => mod.default({
     enabled: true,
     openAnalyzer: true,
+  })).catch(() => {
+    console.warn('Bundle analyzer not available, using default config');
+    return { default: (config) => config };
   });
-  config = withBundleAnalyzer(nextConfig);
+  config = withBundleAnalyzer ? withBundleAnalyzer(nextConfig) : nextConfig;
 }
 
-module.exports = config;
+export default config;
