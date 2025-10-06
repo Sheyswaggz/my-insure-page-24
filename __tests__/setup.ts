@@ -6,6 +6,7 @@
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
 import { jest } from '@jest/globals';
+import React from 'react';
 
 // Configure React Testing Library
 configure({
@@ -61,7 +62,7 @@ jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} alt={props.alt || ''} />;
+    return React.createElement('img', { ...props, alt: props.alt || '' });
   },
 }));
 
@@ -69,11 +70,7 @@ jest.mock('next/image', () => ({
 jest.mock('next/link', () => ({
   __esModule: true,
   default: ({ children, href, ...props }: any) => {
-    return (
-      <a href={href} {...props}>
-        {children}
-      </a>
-    );
+    return React.createElement('a', { href, ...props }, children);
   },
 }));
 
@@ -81,7 +78,7 @@ jest.mock('next/link', () => ({
 jest.mock('next/head', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => {
-    return <>{children}</>;
+    return React.createElement(React.Fragment, {}, children);
   },
 }));
 
